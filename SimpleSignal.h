@@ -69,15 +69,22 @@ protected:
   using Result = typename CbFunction::result_type;
   using CollectorResult = typename Collector::CollectorResult;
 private:
-  /// SignalLink implements a doubly-linked ring with ref-counted nodes containing the signal handlers.
+  /// SignalLink implements a doubly-linked ring with ref-counted nodes containing
+  /// the signal handlers.
   struct SignalLink {
     SignalLink *next, *prev;
     CbFunction  function;
     int         ref_count;
-    explicit    SignalLink (const CbFunction &cbf) : next (nullptr), prev (nullptr), function (cbf), ref_count (1) {}
-    /*dtor*/   ~SignalLink ()           { assert (ref_count == 0); }
-    void        incref     ()           { ref_count += 1; assert (ref_count > 0); }
-    void        decref     ()           { ref_count -= 1; if (!ref_count) delete this; else assert (ref_count > 0); }
+    explicit    SignalLink (const CbFunction &cbf)
+                :   next (nullptr), prev (nullptr), function (cbf), ref_count (1) {}
+    /*dtor*/   ~SignalLink () { assert (ref_count == 0); }
+    void        incref     () { ref_count += 1; assert (ref_count > 0); }
+    void        decref     ()
+    {
+        ref_count -= 1;
+        if (!ref_count) delete this;
+        else assert (ref_count > 0);
+    }
     void
     unlink ()
     {
@@ -121,7 +128,7 @@ private:
     if (!callback_ring_)
       {
         callback_ring_ = new SignalLink (CbFunction()); // ref_count = 1
-        callback_ring_->incref(); // ref_count = 2, head of ring, can be deactivated but not removed
+        callback_ring_->incref(); // ref_count=2, head of ring, can be deactivated but not removed
         callback_ring_->next = callback_ring_; // ring head initialization
         callback_ring_->prev = callback_ring_; // ring tail initialization
       }
@@ -150,9 +157,17 @@ public:
       }
   }
   /// Operator to add a new function or lambda as signal handler, returns a handler connection ID.
-  size_t connect (const CbFunction &cb)      { ensure_ring(); return callback_ring_->add_before (cb); }
-  /// Operator to remove a signal handler through it connection ID, returns if a handler was removed.
-  bool   disconnect (size_t connection)         { return callback_ring_ ? callback_ring_->remove_sibling (connection) : false; }
+  size_t connect (const CbFunction &cb)
+  {
+      ensure_ring();
+      return callback_ring_->add_before (cb);
+  }
+  /// Operator to remove a signal handler through it connection ID, returns if a handler
+  /// was removed.
+  bool disconnect (size_t connection)
+  {
+      return callback_ring_ ? callback_ring_->remove_sibling (connection) : false;
+  }
   /// Emit a signal, i.e. invoke all its callbacks and collect return types with the Collector.
   CollectorResult
   emit (Args... args)
@@ -211,18 +226,22 @@ public:
  * and optionally a return result collector class type.
  * Signal callbacks can be added with operator+= to a signal and removed with operator-=, using
  * a callback connection ID return by operator+= as argument.
- * The callbacks of a signal are invoked with the emit() method and arguments according to the signature.
+ * The callbacks of a signal are invoked with the emit() method and arguments according 
+ * to the signature.
  * The result returned by emit() depends on the signal collector class. By default, the result of
  * the last callback is returned from emit(). Collectors can be implemented to accumulate callback
  * results or to halt a running emissions in correspondance to callback results.
  * The signal implementation is safe against recursion, so callbacks may be removed and
  * added during a signal emission and recursive emit() calls are also safe.
- * The overhead of an unused signal is intentionally kept very low, around the size of a single pointer.
+ * The overhead of an unused signal is intentionally kept very low, around the size of a single
+ * pointer.
  * Note that the Signal template types is non-copyable.
  */
-template <typename SignalSignature, class Collector = Lib::CollectorDefault<typename std::function<SignalSignature>::result_type> >
-struct Signal /*final*/ :
-    Lib::ProtoSignal<SignalSignature, Collector>
+template <typename SignalSignature,
+          class Collector = Lib::CollectorDefault<typename
+                                                  std::function<SignalSignature>::result_type> >
+struct Signal /*final*/
+  : Lib::ProtoSignal<SignalSignature, Collector>
 {
   using ProtoSignal = Lib::ProtoSignal<SignalSignature, Collector>;
   using CbFunction = typename ProtoSignal::CbFunction;
@@ -230,14 +249,16 @@ struct Signal /*final*/ :
   Signal (const CbFunction &method = CbFunction()) : ProtoSignal (method) {}
 };
 
-/// This function creates a std::function by binding @a object to the member function pointer @a method.
+/// This function creates a std::function by binding @a object to the member function
+/// pointer @a method.
 template<class Instance, class Class, class R, class... Args> std::function<R (Args...)>
 slot (Instance &object, R (Class::*method) (Args...))
 {
   return [&object, method] (Args... args) { return (object .* method) (args...); };
 }
 
-/// This function creates a std::function by binding @a object to the member function pointer @a method.
+/// This function creates a std::function by binding @a object to the member function
+/// pointer @a method.
 template<class Class, class R, class... Args> std::function<R (Args...)>
 slot (Class *object, R (Class::*method) (Args...))
 {
@@ -276,7 +297,8 @@ private:
   CollectorResult result_;
 };
 
-/// CollectorVector returns the result of the all signal handlers from a signal emission in a std::vector.
+/// CollectorVector returns the result of the all signal handlers from a signal emission
+/// in a std::vector.
 template<typename Result>
 struct CollectorVector {
   using CollectorResult = std::vector<Result>;

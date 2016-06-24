@@ -10,7 +10,9 @@
 #include <ctime>
 #include <cstdlib>
 
-static std::string string_printf (const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+static std::string
+string_printf (const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+
 static std::string
 string_printf (const char *format, ...)
 {
@@ -38,7 +40,8 @@ struct TestCounter {
 };
 
 namespace { // Anon
-void        (*test_counter_add2) (void*, uint64_t) = TestCounter::add2; // external symbol to prevent easy inlining
+// external symbol to prevent easy inlining
+void        (*test_counter_add2) (void*, uint64_t) = TestCounter::add2;
 static uint64_t test_counter_var = 0;
 } // Anon
 
@@ -64,14 +67,25 @@ public:
   {
     accu = "";
     Simple::Signal<char (float, int, std::string)> sig1;
+      
     size_t id1 = sig1.connect(float_callback);
-    size_t id2 = sig1.connect([] (float, int i, std::string) { accu += string_printf ("int: %d\n", i); return 0; });
-    size_t id3 = sig1.connect([] (float, int, const std::string &s) { accu += string_printf ("string: %s\n", s.c_str()); return 0; });
+      
+    size_t id2 = sig1.connect([] (float, int i, std::string) {
+                                    accu += string_printf ("int: %d\n", i); return 0;
+                              });
+    
+    size_t id3 = sig1.connect([] (float, int, const std::string &s) {
+                                    accu += string_printf ("string: %s\n", s.c_str()); return 0;
+                              });
     sig1.emit (.3, 4, "huhu");
+      
     bool success;
-    success = sig1.disconnect(id1); assert (success == true);  success = sig1.disconnect(id1); assert (success == false);
-    success = sig1.disconnect(id2); assert (success == true);  success = sig1.disconnect(id3); assert (success == true);
-    success = sig1.disconnect(id3); assert (success == false); success = sig1.disconnect(id2); assert (success == false);
+    success = sig1.disconnect(id1); assert (success == true);
+    success = sig1.disconnect(id1); assert (success == false);
+    success = sig1.disconnect(id2); assert (success == true);
+    success = sig1.disconnect(id3); assert (success == true);
+    success = sig1.disconnect(id3); assert (success == false);
+    success = sig1.disconnect(id2); assert (success == false);
     Foo foo;
     sig1.connect(Simple::slot (foo, &Foo::foo_bool));
     sig1.connect(Simple::slot (&foo, &Foo::foo_bool));
@@ -175,7 +189,8 @@ bench_simple_signal()
   const uint64_t benchdone = timestamp_benchmark();
   const uint64_t end_counter = TestCounter::get();
   assert (end_counter - start_counter == i);
-  printf ("OK\n  Benchmark: Simple::Signal: %fns per emission (size=%u): ", size_t (benchdone - benchstart) * 1.0 / size_t (i),
+  printf ("OK\n  Benchmark: Simple::Signal: %fns per emission (size=%u): ",
+          size_t (benchdone - benchstart) * 1.0 / size_t (i),
           (unsigned int) sizeof (sig_increment));
 }
 
@@ -193,7 +208,8 @@ bench_callback_loop()
   const uint64_t benchdone = timestamp_benchmark();
   const uint64_t end_counter = TestCounter::get();
   assert (end_counter - start_counter == i);
-  printf ("OK\n  Benchmark: callback loop: %fns per round: ", size_t (benchdone - benchstart) * 1.0 / size_t (i));
+  printf ("OK\n  Benchmark: callback loop: %fns per round: ",
+          size_t (benchdone - benchstart) * 1.0 / size_t (i));
 }
 
 uint64_t
